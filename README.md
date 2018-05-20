@@ -2,7 +2,7 @@
 
 Generate GraphQL schemas and server based on SQL table structure.
 
-This fork is an attempt to add foreign key constraints detection to replace the "naive" reference resolving. 
+This fork is an attempt to add foreign key constraints detection to replace the "naive" reference resolving mechanism. 
 
 ## What?
 
