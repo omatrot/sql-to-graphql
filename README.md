@@ -2,6 +2,8 @@
 
 Generate GraphQL schemas and server based on SQL table structure.
 
+This fork is an attempt to add foreign key constraints detection to replace the "naive" reference resolving. 
+
 ## What?
 
 [GraphQL](https://facebook.github.io/graphql/) is pretty awesome, but getting started can be difficult - especially if you are unfamiliar with the concepts it introduces.
