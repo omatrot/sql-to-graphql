@@ -128,16 +128,17 @@ function onTableDataCollected(err, data) {
         model = steps.tableToObject({
             name: tableName,
             columns: data.tableStructure[tableName],
-            comment: data.tableComments[tableName]
+            comment: data.tableComments[tableName],
+            foreignKeys: data.tableForeignKeys[tableName]
         }, opts);
 
         models[model.name] = model;
     }
 
-    if (data.tableForeignKeys)
-        data.models = steps.findReferences(models, data.tableForeignKeys);
-    else
-        data.models = steps.findReferences(models);
+    /*     if (data.tableForeignKeys)
+            data.models = steps.findReferences(models, data.tableForeignKeys);
+        else */
+    data.models = steps.findReferences(models);
 
     // Note: This mutates the models - sorry. PRs are welcome.
     steps.findOneToManyReferences(adapter, data.models, function (refErr) {

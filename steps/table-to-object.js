@@ -12,8 +12,8 @@ function tableToObject(table, opts) {
         prefix: opts.stripPrefix
     });
 
-    var fields = table.columns.map(function(column) {
-        return columnToObject(column, opts);
+    var fields = table.columns.map(function (column) {
+        return columnToObject(column, table.foreignKeys, opts);
     });
 
     var model = {
@@ -22,7 +22,7 @@ function tableToObject(table, opts) {
         table: table.name,
         normalizedTable: normalized,
         fields: indexBy(fields, 'name'),
-        aliasedFields: fields.reduce(function(aliases, field) {
+        aliasedFields: fields.reduce(function (aliases, field) {
             if (field.name !== field.originalName) {
                 aliases[field.originalName] = field.name;
             }
@@ -39,11 +39,11 @@ function getTypeName(item) {
 }
 
 function normalizeTableName(name, strip) {
-    (strip.suffix || []).forEach(function(suffix) {
+    (strip.suffix || []).forEach(function (suffix) {
         name = name.replace(new RegExp(escapeRegExp(suffix) + '$'), '');
     });
 
-    (strip.prefix || []).forEach(function(prefix) {
+    (strip.prefix || []).forEach(function (prefix) {
         name = name.replace(new RegExp('^' + escapeRegExp(prefix)), '');
     });
 

@@ -6,13 +6,15 @@ var camelCase = require('lodash/string/camelCase');
 var capitalize = require('lodash/string/capitalize');
 var generics = ['type'], undef;
 
-function columnToObject(col, opts) {
+function columnToObject(col, fks, opts) {
+    console.log(`processing column [${col.columnName}]`);
     var column = merge({
         name: getColName(col, opts),
         originalName: col.columnName,
         description: col.columnComment || undef,
         isNullable: col.isNullable === 'YES',
-        isPrimaryKey: col.columnKey === 'PRI'
+        isPrimaryKey: col.columnKey === 'PRI',
+        isForeignKey: isColumnForeignKey(col, fks)
     }, getType(col));
 
     if (column.isPrimaryKey && !opts.unaliasedPrimaryKeys) {
@@ -20,6 +22,16 @@ function columnToObject(col, opts) {
     }
 
     return column;
+}
+
+function isColumnForeignKey(col, fks) {
+    var filtered = [];
+    for (var i = 0; i < fks.length; i++) {
+        if (fks[i].columnName === col.columnName) {
+            filtered.push(fks[i]);
+        }
+    }
+    return filtered.length !== 0;
 }
 
 function getColName(col) {
@@ -36,7 +48,7 @@ function getEnumValueMap(col) {
         .replace(/^\{|\}$/g, '')
         .split(',')
         .map(unquote)
-        .map(function(val) {
+        .map(function (val) {
             return {
                 value: val,
                 description: undef

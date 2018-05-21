@@ -8,8 +8,8 @@ var capitalize = require('lodash/string/capitalize');
 var pluralize = require('pluralize');
 
 module.exports = function findOneToManyRelationships(adapter, models, callback) {
-    var tasks = Object.keys(models).reduce(function(tasklist, model) {
-        tasklist[model] = function(cb) {
+    var tasks = Object.keys(models).reduce(function (tasklist, model) {
+        tasklist[model] = function (cb) {
             findRelationships(adapter, models[model], models, cb);
         };
         return tasklist;
@@ -24,37 +24,41 @@ function findRelationships(adapter, model, models, callback) {
     }
 
     var done = after(model.references.length, callback);
-    model.references.forEach(function(ref) {
+    model.references.forEach(function (ref) {
         var referenceColumn = getUnaliasedField(ref.refField, model);
-        adapter.hasDuplicateValues(model.table, referenceColumn, function(err, hasDupes) {
-            if (err) {
-                return callback(err);
-            }
+        // Protect against problem with aliased fields
+        if (referenceColumn)
+            adapter.hasDuplicateValues(model.table, referenceColumn, function (err, hasDupes) {
+                if (err) {
+                    return callback(err);
+                }
 
-            if (!hasDupes) {
-                return done(null, model);
-            }
+                if (!hasDupes) {
+                    return done(null, model);
+                }
 
-            var reverseRefs = ref.model.listReferences;
-            var refName = camelCase(pluralize(model.name));
-            var description = pluralize(model.name) + ' belonging to this ' + ref.model.name;
-            if (find(reverseRefs, { field: refName }) || ref.model.fields[refName]) {
-                // @TODO find a better name algo resolve mechanism
-                // `thread_id` should naturally be `threads`, while `old_thread_id` should be.. something else
-                refName += capitalize(camelCase(referenceColumn)).replace(/Id$/, '');
-                description += '..? (' + referenceColumn + ')';
-            }
+                var reverseRefs = ref.model.listReferences;
+                var refName = camelCase(pluralize(model.name));
+                var description = pluralize(model.name) + ' belonging to this ' + ref.model.name;
+                if (find(reverseRefs, { field: refName }) || ref.model.fields[refName]) {
+                    // @TODO find a better name algo resolve mechanism
+                    // `thread_id` should naturally be `threads`, while `old_thread_id` should be.. something else
+                    refName += capitalize(camelCase(referenceColumn)).replace(/Id$/, '');
+                    description += '..? (' + referenceColumn + ')';
+                }
 
-            reverseRefs.push({
-                model: model,
-                description: description,
-                field: refName,
-                refField: referenceColumn,
-                isList: true
+                reverseRefs.push({
+                    model: model,
+                    description: description,
+                    field: refName,
+                    refField: referenceColumn,
+                    isList: true
+                });
+
+                done(null, model);
             });
-
+        else
             done(null, model);
-        });
     });
 }
 
