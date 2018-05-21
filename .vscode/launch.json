@@ -13,7 +13,7 @@
                 "--database",
                 "etp2",
                 "--output-dir",
-                "\"./sql2graphql/\"",
+                "sql2graphql",
                 "--host",
                 "matrot-tech-mysql.ctmep38ley2l.eu-west-3.rds.amazonaws.com",
                 "--user",
