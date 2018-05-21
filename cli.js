@@ -19,7 +19,8 @@ var steps = {
 
     collect: {
         tableStructure: require('./steps/table-structure'),
-        tableComments: require('./steps/table-comment')
+        tableComments: require('./steps/table-comment'),
+        tableForeignKeys: require('./steps/table-foreignkeys')
     }
 };
 
@@ -43,7 +44,7 @@ if (!opts.interactive && !opts.outputDir) {
 }
 
 if (opts.interactive) {
-    prompts.dbCredentials(opts, function(options) {
+    prompts.dbCredentials(opts, function (options) {
         opts = merge({}, opts, options);
 
         initOutputPath();
@@ -57,7 +58,7 @@ function initOutputPath() {
         return initStyleOpts();
     }
 
-    prompts.outputPath(function(outPath) {
+    prompts.outputPath(function (outPath) {
         opts.outputDir = outPath;
 
         initStyleOpts();
@@ -69,7 +70,7 @@ function initStyleOpts() {
         return instantiate();
     }
 
-    prompts.styleOptions(opts, function(options) {
+    prompts.styleOptions(opts, function (options) {
         opts = options;
 
         instantiate();
@@ -85,7 +86,7 @@ function instantiate() {
     }
 
     // Instantiate the adapter for the given backend
-    adapter = backend(opts, function(err) {
+    adapter = backend(opts, function (err) {
         bailOnError(err);
 
         setTimeout(getTables, 1000);
@@ -94,7 +95,7 @@ function instantiate() {
 
 function getTables() {
     // Collect a list of available tables
-    steps.getTables(adapter, opts, function(err, tableNames) {
+    steps.getTables(adapter, opts, function (err, tableNames) {
         bailOnError(err);
 
         // If we're in interactive mode, prompt the user to select from the list of available tables
@@ -110,7 +111,7 @@ function getTables() {
 // When tables have been selected, fetch data for those tables
 function onTablesSelected(tables) {
     // Assign partialed functions to make the code slightly more readable
-    steps.collect = mapValues(steps.collect, function(method) {
+    steps.collect = mapValues(steps.collect, function (method) {
         return partial(method, adapter, { tables: tables });
     });
 
@@ -133,10 +134,13 @@ function onTableDataCollected(err, data) {
         models[model.name] = model;
     }
 
-    data.models = steps.findReferences(models);
+    if (data.tableForeignKeys)
+        data.models = steps.findReferences(models, data.tableForeignKeys);
+    else
+        data.models = steps.findReferences(models);
 
     // Note: This mutates the models - sorry. PRs are welcome.
-    steps.findOneToManyReferences(adapter, data.models, function(refErr) {
+    steps.findOneToManyReferences(adapter, data.models, function (refErr) {
         if (refErr) {
             throw refErr;
         }

@@ -17,7 +17,7 @@ module.exports = function mysqlBackend(opts, callback) {
     process.nextTick(callback);
 
     return {
-        getTables: function(tableNames, cb) {
+        getTables: function (tableNames, cb) {
             var matchAll = tableNames.length === 1 && tableNames[0] === '*';
 
             mysql
@@ -26,11 +26,11 @@ module.exports = function mysqlBackend(opts, callback) {
                 .where('table_schema', opts.database)
                 .where('table_type', 'BASE TABLE')
                 .catch(cb)
-                .then(function(tbls) {
+                .then(function (tbls) {
                     tbls = pluck(tbls, 'table_name');
 
                     if (!matchAll) {
-                        tbls = tbls.filter(function(tbl) {
+                        tbls = tbls.filter(function (tbl) {
                             return contains(tableNames, tbl);
                         });
                     }
@@ -39,7 +39,7 @@ module.exports = function mysqlBackend(opts, callback) {
                 });
         },
 
-        getTableComment: function(tableName, cb) {
+        getTableComment: function (tableName, cb) {
             mysql
                 .first('table_comment AS comment')
                 .from('information_schema.tables')
@@ -48,12 +48,12 @@ module.exports = function mysqlBackend(opts, callback) {
                     table_name: tableName
                 })
                 .catch(cb)
-                .then(function(info) {
+                .then(function (info) {
                     cb(null, info ? info.comment || undef : undef);
                 });
         },
 
-        getTableStructure: function(tableName, cb) {
+        getTableStructure: function (tableName, cb) {
             mysql
                 .select([
                     'table_name',
@@ -72,12 +72,33 @@ module.exports = function mysqlBackend(opts, callback) {
                 })
                 .orderBy('ordinal_position', 'asc')
                 .catch(cb)
-                .then(function(info) {
+                .then(function (info) {
                     cb(null, (info || []).map(camelCaseKeys));
                 });
         },
 
-        hasDuplicateValues: function(table, column, cb) {
+        getTableForeignKeys: function (tableName, cb) {
+            mysql
+                .select([
+                    'table_name',
+                    'column_name',
+                    'constraint_name',
+                    'referenced_table_name',
+                    'referenced_column_name'
+                ])
+                .from('information_schema.key_column_usage')
+                .where({
+                    table_schema: opts.database,
+                    table_name: tableName
+                })
+                .havingRaw("referenced_column_name IS NOT ?", [null])
+                .catch(cb)
+                .then(function (fks) {
+                    cb(null, (fks || []).map(camelCaseKeys));
+                });
+        },
+
+        hasDuplicateValues: function (table, column, cb) {
             mysql
                 .count(column + ' as hasSameValues')
                 .from(table)
@@ -85,19 +106,19 @@ module.exports = function mysqlBackend(opts, callback) {
                 .having('hasSameValues', '>', 1)
                 .limit(1)
                 .catch(cb)
-                .then(function(info) {
+                .then(function (info) {
                     cb(null, (info || []).length > 0);
                 });
         },
 
-        close: function(cb) {
+        close: function (cb) {
             mysql.destroy(cb);
         }
     };
 };
 
 function camelCaseKeys(obj) {
-    return mapKeys(obj, function(val, key) {
+    return mapKeys(obj, function (val, key) {
         return camelCase(key);
     });
 }
